@@ -3,6 +3,8 @@ from Services.Depression import Depression
 from Services.FiftyTwo import FiftyTwo
 from Services.Yaaa import Yaaa
 
+import random
+
 
 bot = telebot.TeleBot('7558145877:AAGws19U9dzRaR-LdsdQvNw1aEeKCBeQwCU')
 
@@ -15,12 +17,18 @@ def help(message):
     bot.send_message(message.chat.id, 'Спасибо, мне не нужна ваша помощь')
 
 @bot.message_handler()
-def answer_to_depression(message):
+def messages_handler(message):
+
+    if (message.from_user.id == 808356158): 
+        randValue = random.random()
+        if (randValue > 0.95):
+            bot.delete_message(message.chat.id, message.id)
+            return
+
     depression = Depression()
     depressionAnswer = depression.handle_message(message.text)
     if (depressionAnswer):
         bot.send_message(message.chat.id, depressionAnswer)
-        return
 
     fifty_two = FiftyTwo()
     answer = fifty_two.handle_message(message.text)
@@ -31,6 +39,7 @@ def answer_to_depression(message):
     answer = yaaa.handle_message(message.text)
     if (answer):
         bot.send_message(message.chat.id, answer)
+
 
 
 bot.polling(non_stop=True)
