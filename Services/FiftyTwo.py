@@ -8,7 +8,7 @@ class FiftyTwo(object):
         return None
     
     def check_message(self, message: str) -> bool :
-        if (re.match('52|(п(и|ять|е)(д(и|е))?сят) два', message)):
+        if (re.match('^52|(п(и|ять|е)(д(и|е))?сят) два', message)):
             return True
         return False
     
