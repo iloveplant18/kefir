@@ -4,12 +4,12 @@ import json
 from time import monotonic
 import requests
 
-
 from index import bot
 from Services.Depression import Depression
 from Services.FiftyTwo import FiftyTwo
 from Services.Yaaa import Yaaa
-from Services.AcheService import AcheService
+from Services.AcheService import AcheService, IcheService, RandomUntilConversationService
+#from Services.Shared import OperationsService
 
 # from MessageSenders import MessageSender
 
@@ -22,11 +22,27 @@ def orda(message):
     bot.send_message(message.chat.id, 'орду сбить')
 
 @bot.message_handler()
-def messages_handler(message):
+def message_handler(message):
     service = AcheService()
+    response = service.Handle(message.text)
+    if response:
+        bot.send_message(message.chat.id, response)
+        return
+    
+    service = IcheService()
     response = service.Handle(message.text)
     if (response):
         bot.send_message(message.chat.id, response)
+        return
+
+    # Случайная фраза прокает с определенным шансом на каждое сообщение
+    service = RandomUntilConversationService()
+    response = service.Handle(message.text)
+    if (response):
+        bot.send_message(message.chat.id, response)
+        return
+
+
 
 # @bot.message_handler(commands=['start'])
 # def start(message):
