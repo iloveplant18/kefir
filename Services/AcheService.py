@@ -1,4 +1,5 @@
-import random
+from Services.Shared.OperationsService import OperationsService
+from Services.Shared import Data
 
 class AcheService(object):
     def Handle(self, message: str) -> str|None :
@@ -13,17 +14,32 @@ class AcheService(object):
             return response
         else:
             return None
-    
-class OperationsService():
+        
+class IcheService(object):
+    def Handle(self, message: str) -> str|None :
 
-    @staticmethod
-    def CheckInput(message: str, request: str) -> bool :
-        if (message == request):
-            return True
+        responses = ['иниче', 'похуй плюс похуй', 'ну похуй и похуй']
+
+        request = 'иче'
+        isTargetMessage = OperationsService.CheckInput(message, request)
+        response = OperationsService.GetShuffledAnswer(responses)
+
+        if (isTargetMessage):
+            return response
         else:
-            return False
-    
-    @staticmethod
-    def GetShuffledAnswer(response) -> str:
-        answerNumber = random.randint(0, len(response) - 1)
-        return response[answerNumber]
+            return None
+
+# Случайная фраза прокает с определенным шансом на каждое сообщение
+class RandomUntilConversationService(object):
+    def Handle(self, message: str) -> str|None :
+
+        chanceToLucky = 8 #в целочисленных процентах от 1 до 100
+        isLucky = OperationsService.CheckLuck(chanceToLucky)
+
+        responses = Data.data["phrases"]
+        response = OperationsService.GetShuffledAnswer(responses)
+
+        if (isLucky):
+            return response
+        else:
+            return None
