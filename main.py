@@ -9,6 +9,7 @@ from index import bot
 from Services.Depression import Depression
 from Services.FiftyTwo import FiftyTwo
 from Services.Yaaa import Yaaa
+from Services.AcheService import AcheService
 
 # from MessageSenders import MessageSender
 
@@ -16,9 +17,16 @@ import random
 
 # message_sender = MessageSender()
 
-@bot.message_handler()
+@bot.message_handler(commands=['орда'])
 def orda(message):
     bot.send_message(message.chat.id, 'орду сбить')
+
+@bot.message_handler()
+def messages_handler(message):
+    service = AcheService()
+    response = service.Handle(message.text)
+    if (response):
+        bot.send_message(message.chat.id, response)
 
 # @bot.message_handler(commands=['start'])
 # def start(message):
@@ -121,8 +129,5 @@ def orda(message):
 # def send_random_message(array, chat_id):
 #     index = math.floor(random.random() * len(array))
 #     bot.send_message(chat_id, array[index]) 
-
-
-
 
 bot.polling(non_stop=True)
