@@ -20,3 +20,8 @@ BOT_KEY=981749817423:FsfwexGFkvvnASDADw-asdASdsdfsdasdSD
 ```
 python main.py
 ```
+
+## О проекте
+
+Бот построен на библиотеке [pyTelegramBotApi](https://pypi.org/project/pyTelegramBotAPI/)
+
