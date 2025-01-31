@@ -1,25 +1,11 @@
-import re
-import math
-import json
-from time import monotonic
-import requests
-
-from index import bot
-from Services.Depression import Depression
-from Services.FiftyTwo import FiftyTwo
-from Services.Yaaa import Yaaa
+from config.bot_init import bot
 from Services.AcheService import AcheService, IcheService, RandomUntilConversationService
-#from Services.Shared import OperationsService
+import config.register_filters
 
-# from MessageSenders import MessageSender
 
-import random
-
-# message_sender = MessageSender()
-
-@bot.message_handler(commands=['орда'])
-def orda(message):
-    bot.send_message(message.chat.id, 'орду сбить')
+@bot.message_handler(depression_filter=True)
+def depression_controller(message):
+    bot.reply_to(message, 'заплачь')
 
 @bot.message_handler()
 def message_handler(message):
@@ -28,7 +14,7 @@ def message_handler(message):
     if response:
         bot.send_message(message.chat.id, response)
         return
-    
+
     service = IcheService()
     response = service.Handle(message.text)
     if (response):
@@ -41,6 +27,7 @@ def message_handler(message):
     if (response):
         bot.send_message(message.chat.id, response)
         return
+
 
 
 
@@ -146,4 +133,5 @@ def message_handler(message):
 #     index = math.floor(random.random() * len(array))
 #     bot.send_message(chat_id, array[index]) 
 
-bot.polling(non_stop=True)
+
+bot.infinity_polling()
