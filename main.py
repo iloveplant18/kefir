@@ -1,7 +1,39 @@
 from config.bot_init import bot
 from Services.AcheService import AcheService, IcheService, RandomUntilConversationService
+from Services.BossService import BossService
+import random
 import config.register_filters
 
+bossService = None
+
+@bot.message_handler(commands=['boss'])
+def start(message):
+    global bossService
+    
+    if (bossService is not None):
+        bot.send_message(message.chat.id, "Вы че, добейте этого сначала")
+        return
+    
+    bossService = BossService()
+    response = bossService.SpawnBoss(random.randint(60, 80))
+    bot.send_message(message.chat.id, response)
+    return 
+
+bossService = None
+
+@bot.message_handler(commands=['hit'])
+def start(message):
+    global bossService
+
+    if (bossService == None):
+        bot.send_message(message.chat.id, 'Челы, бить некого, чильтесь')
+        return 
+    else:
+        response = bossService.HitBoss(random.randint(1, 8))
+        if (response[1] == True):
+            bossService = None
+        bot.send_message(message.chat.id, response[0])
+        return 
 
 @bot.message_handler(depression_filter=True)
 def depression_controller(message):
@@ -29,6 +61,9 @@ def message_handler(message):
         return
 
 
+
+   
+        
 
 
 # @bot.message_handler(commands=['start'])
