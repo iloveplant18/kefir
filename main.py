@@ -4,14 +4,16 @@ from Services.BossService import BossService
 import random
 import threading
 import config.register_filters
-from telebot.types import BotCommand, ReplyKeyboardMarkup, KeyboardButton
+from telebot.types import BotCommand, ReplyKeyboardMarkup, KeyboardButton, BotCommandScopeChat
+import os
 
 bossService = None
 bot.set_my_commands([
     BotCommand("battles", "В боевой режим"),
     BotCommand("chill", "В мирный режим"),
     BotCommand("boss", "Призвать босса"),
-])
+],
+scope=BotCommandScopeChat(chat_id=os.getenv('BOT_KEY')))
 
 battleUsers = set()
 bossService = None
@@ -96,7 +98,9 @@ def start(message):
         bossService = None
         return
     
-    threading.Thread(target=bossService.OutOfCooldown(userId)).start()
+    # if (isHitted == True):
+    #     threading.Thread(target=bossService.OutOfCooldown(userId, message.from_user.first_name)).start()
+
     return
 
 @bot.message_handler(depression_filter=True)
