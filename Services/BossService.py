@@ -1,12 +1,12 @@
 from Services.Shared.OperationsService import OperationsService
 from telebot.types import ReplyKeyboardRemove
-import time
 from datetime import datetime
 
 class BossService(object):
 
     usersOnCooldown = dict()
     isBossAlive = True
+    lastCDMessageId = None
 
     #Фразы позже переедут в другое место
     spawnPhrases = [
@@ -53,7 +53,10 @@ class BossService(object):
             if (timeLeft > cooldown - datetime.min):
                 self.OutOfCooldown(userId, userName)
             else:
-                self.bot.send_message(self.chatId, f'{userName}, ты кд')
+                cDMessageId = self.bot.send_message(self.chatId, f'{userName}, ты кд')
+                if(self.lastCDMessageId is not None):
+                    self.bot.delete_message(self.chatId, self.lastCDMessageId)
+                self.lastCDMessageId = cDMessageId.id
                 return
 
         hpAfterHit = self.boss.GetHit(damage)

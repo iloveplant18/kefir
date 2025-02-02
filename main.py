@@ -91,6 +91,10 @@ def start(message):
         bot.send_message(chatId, 'Челы, бить некого, чильтесь')
         return 
     
+    if (userId not in battleUsers):
+        bot.send_message(message.chat.id, "Чтобы драться с боссом, нужно быть в режиме боя")
+        return
+    
     bossService.HitBoss(message, random.randint(1, 8))
 
     if (bossService.isBossAlive == False):
