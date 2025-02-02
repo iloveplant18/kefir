@@ -1,10 +1,11 @@
 from Services.Shared.OperationsService import OperationsService
 from telebot.types import ReplyKeyboardRemove
 import time
+from datetime import datetime
 
 class BossService(object):
 
-    usersOnCooldown = set()
+    usersOnCooldown = dict()
     isBossAlive = True
 
     #Фразы позже переедут в другое место
@@ -38,11 +39,22 @@ class BossService(object):
 
         userId = message.from_user.id
         userName = message.from_user.first_name
+        
+        #порефакторить
+        usersOnCooldown = list(self.usersOnCooldown.keys())
+        if (str(userId) in usersOnCooldown):
+            cooldown = datetime(2025, 2, 2, 0, 0, 30).time()
+            cooldown = datetime.combine(datetime.min, cooldown)
+        
+            time = datetime.now().time()
+            time = datetime.combine(datetime.min, time)
 
-        # сейчас здесь случается некритичный баг, он должен  
-        # пофикситься после создания класса атакующего
-        if (userId in self.usersOnCooldown):
-            self.bot.send_message(userId, "Ты кд")
+            timeLeft = time - self.usersOnCooldown[f"{userId}"]
+            if (timeLeft > cooldown - datetime.min):
+                self.OutOfCooldown(userId, userName)
+            else:
+                self.bot.send_message(self.chatId, f'{userName}, ты кд')
+                return
 
         hpAfterHit = self.boss.GetHit(damage)
         
@@ -52,26 +64,24 @@ class BossService(object):
         
         BattleLogs.LogHit(self.chatId, self.bot, userName, damage, hpAfterHit)
 
-        self.GoToCooldown(userId)
-    
+        self.GoToCooldown(userId, userName)
+
+        return
 
     def KillBoss(self):
         BattleLogs.LogKill(self.chatId, self.bot)
 
-    # Нужны экз классов для каждого пользователя
     def SendBattleMarkups(self):
-        for user in self.users:
-            self.bot.send_message(user, "Меню атак получено", reply_markup=self.markup)
+        self.bot.send_message(self.chatId, "Меню атак получено", reply_markup=self.markup)
 
-    def OutOfCooldown(self, user):
-        cooldown = 30
-        time.sleep(cooldown)
-        self.usersOnCooldown.remove(user)
-        self.bot.send_message(user, "Воюй дальше", reply_markup=self.markup)
+    def OutOfCooldown(self, userId, userName):
+        del self.usersOnCooldown[f"{userId}"]
 
-    def GoToCooldown(self, user):
-        self.usersOnCooldown.add(user)
-        self.bot.send_message(user, 'В кд 30 секунд', reply_markup=ReplyKeyboardRemove())
+    def GoToCooldown(self, userId, userName):
+        time = datetime.now().time()
+        time = datetime.combine(datetime.min, time)
+        self.usersOnCooldown[f"{userId}"] = time
+        self.bot.send_message(self.chatId, f'{userName} в кд 30 секунд')
 
 
 class Boss(object):
