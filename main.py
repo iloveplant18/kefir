@@ -2,38 +2,102 @@ from config.bot_init import bot
 from Services.AcheService import AcheService, IcheService, RandomUntilConversationService
 from Services.BossService import BossService
 import random
+import threading
 import config.register_filters
+from telebot.types import BotCommand, ReplyKeyboardMarkup, KeyboardButton
 
 bossService = None
+bot.set_my_commands([
+    BotCommand("battles", "В боевой режим"),
+    BotCommand("chill", "В мирный режим"),
+    BotCommand("boss", "Призвать босса"),
+])
 
+battleUsers = set()
+bossService = None
+
+@bot.message_handler(commands=['battles'])
+def start(message):
+    chatId = message.chat.id
+    userId = message.from_user.id
+    userName = message.from_user.first_name
+
+    if (userId in battleUsers):
+        bot.send_message(chatId, f"{userName}, дохуя агрессивный? ты уже в боевом режиме")
+        return
+
+    if (userId not in battleUsers and bossService is not None):
+        bot.send_message(chatId, f"{userName}, ну и где ты был? Жди некст босса теперь")
+        return
+
+    battleUsers.add(userId)
+
+    bot.send_message(chatId, f"{userName} вошел в боевой режим")
+    return
+
+@bot.message_handler(commands=['chill'])
+def start(message):
+    chatId = message.chat.id
+    userId = message.from_user.id
+    userName = message.from_user.first_name
+
+    if (userId not in battleUsers):
+        bot.send_message(chatId, f"{userName}, чилл, чиииллл")
+        return
+    
+    if (userId in battleUsers and bossService is not None):
+        bot.send_message(chatId, f"{userName}, сражайся, сучара ссыкливая")
+        return
+
+    battleUsers.remove(userId)
+
+    bot.send_message(chatId, f"{userName} вышел из боевого режима")
+    return
+    
 @bot.message_handler(commands=['boss'])
 def start(message):
     global bossService
+    userId = message.from_user.id
+
+    bot.delete_message(message.chat.id, message.message_id)
+
+    if (userId not in battleUsers):
+        bot.send_message(message.chat.id, "Чтобы драться с боссом, нужно быть в режиме боя")
+        return
     
     if (bossService is not None):
         bot.send_message(message.chat.id, "Вы че, добейте этого сначала")
         return
-    
-    bossService = BossService()
-    response = bossService.SpawnBoss(random.randint(60, 80))
-    bot.send_message(message.chat.id, response)
-    return 
+    else:
+        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+        hit_button = KeyboardButton("⚔ Ударить")
+        markup.add(hit_button)
 
-bossService = None
+        bossService = BossService(message.chat.id, bot, markup, battleUsers)
+        bossService.SpawnBoss(random.randint(60, 80))
+        return
 
-@bot.message_handler(commands=['hit'])
+@bot.message_handler(func=lambda message: message.text == "⚔ Ударить")
 def start(message):
     global bossService
+    chatId = message.chat.id
+    userId = message.from_user.id
+
+    bot.delete_message(chatId, message.message_id)
 
     if (bossService == None):
-        bot.send_message(message.chat.id, 'Челы, бить некого, чильтесь')
+        bot.send_message(chatId, 'Челы, бить некого, чильтесь')
         return 
-    else:
-        response = bossService.HitBoss(random.randint(1, 8))
-        if (response[1] == True):
-            bossService = None
-        bot.send_message(message.chat.id, response[0])
-        return 
+    
+    bossService.HitBoss(message, random.randint(1, 8))
+
+    if (bossService.isBossAlive == False):
+        bossService.KillBoss()
+        bossService = None
+        return
+    
+    threading.Thread(target=bossService.OutOfCooldown(userId)).start()
+    return
 
 @bot.message_handler(depression_filter=True)
 def depression_controller(message):
@@ -59,12 +123,6 @@ def message_handler(message):
     if (response):
         bot.send_message(message.chat.id, response)
         return
-
-
-
-   
-        
-
 
 # @bot.message_handler(commands=['start'])
 # def start(message):
@@ -168,5 +226,4 @@ def message_handler(message):
 #     index = math.floor(random.random() * len(array))
 #     bot.send_message(chat_id, array[index]) 
 
-
-bot.infinity_polling()
+bot.infinity_polling()  
