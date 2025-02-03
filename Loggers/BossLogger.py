@@ -12,11 +12,6 @@ class BossLogger(object):
         'Я вызвал босса, чуваки, у него {bossHp} здоровья'
     ]
 
-    hitPhrases = [
-        'Въебал на {damage} урона.\nУ лоха осталось {bossHp} хп',
-        'Тычка {damage} урона, осталось {bossHp} хп'
-    ]
-
     killPhrases = [
         'Чмошный развалился, лут в след обновлениях (сосите)',
         'Ну вы крутые, мужики, он всё. лут в след обновлениях (сосите)'
@@ -35,12 +30,6 @@ class BossLogger(object):
         markup.add(hit_button)
         bot.send_message(self.chatId, "Меню атак получено", reply_markup=markup)
 
-    def logHit(self, userName, damage, bossHp):
-        phrase = OperationsService.GetShuffledAnswer(self.hitPhrases)
-        response = phrase.format(damage=damage, bossHp=bossHp)
-        bot.send_message(self.chatId, f"{userName}: {response}")
-
-    def logKill(self):
+    def LogKill(self):
         response = OperationsService.GetShuffledAnswer(self.killPhrases)
         bot.send_message(self.chatId, response, reply_markup=ReplyKeyboardRemove())
-
