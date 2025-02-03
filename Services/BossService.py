@@ -1,3 +1,5 @@
+from Models.Boss import Boss
+from Repositories.BossRepository import BossRepository
 from Services.Shared.OperationsService import OperationsService
 from telebot.types import ReplyKeyboardRemove
 from datetime import datetime, time
@@ -8,60 +10,41 @@ class BossService(object):
     isBossAlive = True
     messageIdCooldownLast = None
 
-    #Фразы позже переедут в другое место
-    spawnPhrases = [
-        'Босс заспавнен, у него {bossHp} здоровья', 
-        'Я вызвал босса, чуваки, у него {bossHp} здоровья'
-    ]
+    def __init__(self, bossRepository, logger):
+        self.bossRepository = bossRepository
+        self.logger = logger
 
-    hitPhrases = [
-        'Въебал на {damage} урона.\nУ лоха осталось {bossHp} хп', 
-        'Тычка {damage} урона, осталось {bossHp} хп'
-    ]
+    def SpawnBoss(self, chatId: int, hp: int) -> Boss or False :
+        self.bossRepository.create(chatId, hp)
+        self.logger.logSpawn(hp)
 
-    killPhrases = [
-        'Чмошный развалился, лут в след обновлениях (сосите)', 
-        'Ну вы крутые, мужики, он всё. лут в след обновлениях (сосите)'
-    ]
+# Адаптировать под архитектуру
+#     def HitBoss(self, message, damage):
 
-    def __init__(self, chatId, bot, markup, users):
-        self.chatId = chatId
-        self.bot = bot
-        self.markup = markup
-        self.users = users
-
-    def SpawnBoss(self, hp):
-        self.boss = Boss(hp)
-        BattleLogs.LogSpawn(self.chatId, self.bot, self.boss.hp)
-        self.SendBattleMarkups()
-
-    def HitBoss(self, message, damage):
-
-        userId = message.from_user.id
-        userName = message.from_user.first_name
+#         userId = message.from_user.id
+#         userName = message.from_user.first_name
         
-        if (self.CheckCooldown(userId) == True):
-            if(self.CheckReload(userId, userName, cooldownSeconds=30) == True):
-                self.OutOfCooldown(userId, userName)
+#         if (self.CheckCooldown(userId) == True):
+#             if(self.CheckReload(userId, userName, cooldownSeconds=30) == True):
+#                 self.OutOfCooldown(userId, userName)
 
-        if (self.CheckCooldown(userId) == True):
-            messageIdCooldown = BattleLogs.LogOnCooldown(self.chatId, self.bot, userName)
-            BattleLogs.LogCleanLastCooldown(self.chatId, self.bot, self.messageIdCooldownLast)
-            self.messageIdCooldownLast = messageIdCooldown
-            return
-        else:
-            hpAfterHit = self.boss.GetHit(damage)
+#         if (self.CheckCooldown(userId) == True):
+#             messageIdCooldown = BattleLogs.LogOnCooldown(self.chatId, self.bot, userName)
+#             BattleLogs.LogCleanLastCooldown(self.chatId, self.bot, self.messageIdCooldownLast)
+#             self.messageIdCooldownLast = messageIdCooldown
+#             return
+#         else:
+#             hpAfterHit = self.boss.GetHit(damage)
             
-            if (hpAfterHit <= 0):
-                hpAfterHit = 0
-                self.isBossAlive = False
+#             if (hpAfterHit <= 0):
+#                 hpAfterHit = 0
+#                 self.isBossAlive = False
 
-            BattleLogs.LogHit(self.chatId, self.bot, userName, damage, hpAfterHit)
+#             BattleLogs.LogHit(self.chatId, self.bot, userName, damage, hpAfterHit)
 
-            self.GoToCooldown(userId, userName)
-            BattleLogs.LogToCooldown(self.chatId, self.bot, userName, cooldown=30)
-
-            return
+#             self.GoToCooldown(userId, userName)
+#             BattleLogs.LogToCooldown(self.chatId, self.bot, userName, cooldown=30)
+#             return
     
     def CheckCooldown(self, userId):
         usersOnCooldown = list(self.usersOnCooldown.keys())
@@ -83,83 +66,78 @@ class BossService(object):
             return True
         else:
             return False
-    
-    def KillBoss(self):
-        BattleLogs.LogKill(self.chatId, self.bot)
-
-    def SendBattleMarkups(self):
-        self.bot.send_message(self.chatId, "Меню атак получено", reply_markup=self.markup)
-
-    def OutOfCooldown(self, userId, userName):
-        del self.usersOnCooldown[f"{userId}"]
-
-    def GoToCooldown(self, userId, userName):
-        dateTimeNow = Calculations.getNowDateTime()
-        self.usersOnCooldown[f"{userId}"] = dateTimeNow
         
+    def KillBoss(self, chatId: int) -> None:
+        self.bossRepository.delete(chatId)
+        self.logger.LogKill()
 
-class Calculations(object):
+#     def OutOfCooldown(self, userId, userName):
+#         del self.usersOnCooldown[f"{userId}"]
 
-    @staticmethod
-    def parseTime(seconds):
-        hours = seconds // 3600
-        minutes = (seconds % 3600) // 60
-        seconds = seconds % 60
+#     def GoToCooldown(self, userId, userName):
+#         dateTimeNow = Calculations.getNowDateTime()
+#         self.usersOnCooldown[f"{userId}"] = dateTimeNow
 
-        return hours, minutes, seconds
+    def CheckIsBossExistsInChat(self, chatId) -> bool:
+        bossInChat = self.bossRepository.get(chatId)
+        return bool(bossInChat)
     
-    @staticmethod
-    def getNowDateTime():
-        timeNow = datetime.now().time()
-        return datetime.combine(datetime.min, timeNow)
     
-    @staticmethod
-    def getCooldownTimeDelta(seconds):
-        cooldownTime = Calculations.parseTime(seconds)
-        timeCooldown = time(hour=cooldownTime[0], minute=cooldownTime[1], second=cooldownTime[2])
-        timeDeltaCooldown = datetime.combine(datetime.min, timeCooldown) - datetime.min
-        return timeDeltaCooldown
+#Сделать отдельный класс с норм неймингом 
+#  class Calculations(object):
 
-class Boss(object):
+#       @staticmethod
+#       def parseTime(seconds):
+#           hours = seconds // 3600
+#           minutes = (seconds % 3600) // 60
+#           seconds = seconds % 60
 
-    def __init__(self, hp):
-        self.hp = hp
+#           return hours, minutes, seconds
 
-    def GetHit(self, damage):
-        self.hp -= damage
-        return self.hp
+#       @staticmethod
+#       def getNowDateTime():
+#           timeNow = datetime.now().time()
+#           return datetime.combine(datetime.min, timeNow)
+
+#       @staticmethod
+#       def getCooldownTimeDelta(seconds):
+#           cooldownTime = Calculations.parseTime(seconds)
+#           timeCooldown = time(hour=cooldownTime[0], minute=cooldownTime[1], second=cooldownTime[2])
+#           timeDeltaCooldown = datetime.combine(datetime.min, timeCooldown) - datetime.min
+#           return timeDeltaCooldown
+
+#Перевезти в логгер
+# class BattleLogs(object):
+
+#     @staticmethod
+#     def LogHit(chatId, bot, userName, damage, bossHp):
+#         phrase = OperationsService.GetShuffledAnswer(BossService.hitPhrases)
+#         response = phrase.format(damage=damage, bossHp=bossHp)
+#         bot.send_message(chatId, f"{userName}: {response}")
+
+#     @staticmethod
+#     def LogKill(chatId, bot):
+#         response = OperationsService.GetShuffledAnswer(BossService.killPhrases)
+#         bot.send_message(chatId, response, reply_markup=ReplyKeyboardRemove())
+
+#     @staticmethod
+#     def LogSpawn(chatId, bot, bossHp):
+#         phrase = OperationsService.GetShuffledAnswer(BossService.spawnPhrases)
+#         response = phrase.format(bossHp=bossHp)
+#         bot.send_message(chatId, response)
+
+#     @staticmethod
+#     def LogOnCooldown(chatId, bot, userName):
+#         phrase = f"{userName}, ты кд" #добавить сколько времени осталось
+#         return bot.send_message(chatId, phrase).id
     
+#     @staticmethod
+#     def LogToCooldown(chatId, bot, userName, cooldown):
+#         phrase = f'{userName} в кд {cooldown} секунд'
+#         bot.send_message(chatId, phrase)
 
-class BattleLogs(object):
-
-    @staticmethod
-    def LogHit(chatId, bot, userName, damage, bossHp):
-        phrase = OperationsService.GetShuffledAnswer(BossService.hitPhrases)
-        response = phrase.format(damage=damage, bossHp=bossHp)
-        bot.send_message(chatId, f"{userName}: {response}")
-
-    @staticmethod
-    def LogKill(chatId, bot):
-        response = OperationsService.GetShuffledAnswer(BossService.killPhrases)
-        bot.send_message(chatId, response, reply_markup=ReplyKeyboardRemove())
-
-    @staticmethod
-    def LogSpawn(chatId, bot, bossHp):
-        phrase = OperationsService.GetShuffledAnswer(BossService.spawnPhrases)
-        response = phrase.format(bossHp=bossHp)
-        bot.send_message(chatId, response)
-
-    @staticmethod
-    def LogOnCooldown(chatId, bot, userName):
-        phrase = f"{userName}, ты кд" #добавить сколько времени осталось
-        return bot.send_message(chatId, phrase).id
-    
-    @staticmethod
-    def LogToCooldown(chatId, bot, userName, cooldown):
-        phrase = f'{userName} в кд {cooldown} секунд'
-        bot.send_message(chatId, phrase)
-
-    @staticmethod
-    def LogCleanLastCooldown(chatId, bot, messageIdLast):
-        if(messageIdLast is not None):
-            bot.delete_message(chatId, messageIdLast)
+#     @staticmethod
+#     def LogCleanLastCooldown(chatId, bot, messageIdLast):
+#         if(messageIdLast is not None):
+#             bot.delete_message(chatId, messageIdLast)
+   
