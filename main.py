@@ -1,13 +1,9 @@
 from Controllers.BossController import BossController
 from Controllers.CharacterController import CharacterController
-from Repositories.CharacterRepository import CharacterRepository
+from DTOs.UserDto import UserDto
 from config.bot_init import bot
 from Services.AcheService import AcheService, IcheService, RandomUntilConversationService
-from Services.BossService import BossService
-import random
-import threading
-import config.register_filters
-from telebot.types import BotCommand, ReplyKeyboardMarkup, KeyboardButton, BotCommandScopeChat
+from telebot.types import BotCommand, BotCommandScopeChat
 import os
 
 
@@ -23,10 +19,11 @@ def start(message):
     bossController = BossController(message.chat.id)
     bossController.spawnBoss()
 
-@bot.message_handler(func=lambda message: message.text == "⚔ Ударить", has_character=True)
+@bot.message_handler(func=lambda message: message.text == "⚔ Ударить")#has_character=True)
 def hit(message):
+    userDto = UserDto(message.from_user.id, message.from_user.first_name)
     bossController = BossController(message.chat.id)
-    bossController.hitBoss(message.from_user.id)
+    bossController.hitBoss(userDto)
 
 @bot.message_handler(commands=['character'])
 def showOrCreateCharacter(message):
