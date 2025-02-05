@@ -13,16 +13,19 @@ bot.set_my_commands([
     BotCommand("boss", "Призвать босса"),
 ],
 scope=BotCommandScopeChat(chat_id=os.getenv('BOT_KEY')))
+bossControllers = dict()
 
 @bot.message_handler(commands=['boss'])
 def start(message):
     bossController = BossController(message.chat.id)
+    bossControllers[f"{message.chat.id}"] = bossController
     bossController.spawnBoss()
-
+    
 @bot.message_handler(func=lambda message: message.text == "⚔ Ударить")#has_character=True)
 def hit(message):
     userDto = UserDto(message.from_user.id, message.from_user.first_name)
-    bossController = BossController(message.chat.id)
+    bossController = bossControllers[f"{message.chat.id}"]
+    bot.delete_message(message.chat.id, message.id)
     bossController.hitBoss(userDto)
 
 @bot.message_handler(commands=['character'])

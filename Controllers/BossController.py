@@ -30,7 +30,7 @@ class BossController:
             bot.send_message(self.chatId, "Вы че, добейте этого сначала")
             return
 
-        self.bossService.SpawnBoss(self.chatId, random.randint(60, 80))
+        self.bossService.SpawnBoss(self.chatId)
 
     def hitBoss(self, userDto):
         isBossExists = self.bossService.CheckIsBossExistsInChat(self.chatId)
@@ -46,6 +46,8 @@ class BossController:
         if (self.CheckCooldown(userDto.id) == True):
             if(self.CheckReload(userDto.id, cooldownSeconds=30) == True):
                 self.OutOfCooldown(userDto.id)
+                self.battleLogger.CleanToCooldownLog(userDto.id)
+                self.battleLogger.CleanHitLog(userDto.id)
 
         # Двойная проверка специально, надо будет кое что потестить
         if (self.CheckCooldown(userDto.id) == True):
@@ -59,7 +61,7 @@ class BossController:
         self.bossService.HitBoss(self.chatId, userDto, damageDto) 
 
         self.GoToCooldown(userDto.id)
-        self.battleLogger.LogToCooldown(userDto.name, cooldown=30)
+        self.battleLogger.LogToCooldown(userDto, cooldown=30)
 
     def CheckCooldown(self, userId):
         usersOnCooldown = list(self.usersOnCooldown.keys())

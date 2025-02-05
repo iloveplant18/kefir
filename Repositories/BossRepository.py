@@ -1,4 +1,4 @@
-from Models.Boss import Boss
+from Models.Bosses.Base.Boss import Boss
 
 # этот класс нужен для взаимодействия с данными о боссах. Пока он хранит private массив с боссами, в дальнейшем можно
 # будет переделать его как захочется (например чтобы он в бд хранил данные)
@@ -9,12 +9,11 @@ bosses = dict()
 
 class BossRepository:
 
-    def create(self, chatId: int, hp: int) -> Boss or False :
+    def create(self, chatId: int, model) -> Boss or False :
         if chatId in bosses:
             return False
-        boss = Boss(hp)
-        bosses[chatId] = boss
-        return boss
+        bosses[chatId] = model # второй босс перезапишет первого. А если хотим создать несколько боссов? -> делать боссам айди
+        return bosses[chatId]
 
     def get(self, chatId: int) -> Boss or None :
         if chatId in bosses:
