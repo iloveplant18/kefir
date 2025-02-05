@@ -38,7 +38,7 @@ class BossService(object):
             updateRequest = { "hp": hpAfterHit }
 
             self.bossRepository.update(chatId, updateRequest)
-            self.battleLogger.LogHit(userDto.name, damage)
+            self.battleLogger.LogHit(userDto, damage)
             self.infoDto.hp = hpAfterHit
             self.battleLogger.RefreshEnemyInfo(self.idBossInfoMessage, self.infoDto)
 
@@ -46,7 +46,8 @@ class BossService(object):
         
     def KillBoss(self, chatId: int) -> None:
         self.bossRepository.delete(chatId)
-        self.bossLogger.LogKill()
+        self.bossLogger.RemoveBossCard(self.idBossInfoMessage)
+        self.bossLogger.LogKill(self.infoDto)
 
     def CheckIsBossExistsInChat(self, chatId) -> bool:
         bossInChat = self.bossRepository.get(chatId)
