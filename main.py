@@ -25,6 +25,7 @@ def start(message):
 def hit(message):
     userDto = UserDto(message.from_user.id, message.from_user.first_name)
     bossController = bossControllers[f"{message.chat.id}"]
+    bot.delete_message(message.chat.id, message.id)
     bossController.hitBoss(userDto)
 
 @bot.message_handler(commands=['character'])

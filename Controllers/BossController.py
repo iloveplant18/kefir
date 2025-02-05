@@ -30,7 +30,7 @@ class BossController:
             bot.send_message(self.chatId, "Вы че, добейте этого сначала")
             return
 
-        self.bossService.SpawnBoss(self.chatId, random.randint(60, 80))
+        self.bossService.SpawnBoss(self.chatId)
 
     def hitBoss(self, userDto):
         isBossExists = self.bossService.CheckIsBossExistsInChat(self.chatId)

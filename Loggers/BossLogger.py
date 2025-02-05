@@ -8,8 +8,8 @@ from config.bot_init import bot
 class BossLogger(object):
 
     spawnPhrases = [
-        'Босс заспавнен, у него {bossHp} здоровья',
-        'Я вызвал босса, чуваки, у него {bossHp} здоровья'
+        'Босс заспавнен',
+        'Я вызвал босса, чуваки'
     ]
 
     killPhrases = [
@@ -17,18 +17,30 @@ class BossLogger(object):
         'Ну вы крутые, мужики, он всё. лут в след обновлениях (сосите)'
     ]
 
+    bossCard =  "🐉 Босс: {name}\n" \
+                "❤️ Здоровье: {hp} HP / {maxhp} HP\n\n" \
+                "📊 Уровень:  {level}\n" \
+                "💎 Редкость: {rarity}"
+
     def __init__(self, chatId):
         self.chatId = chatId
 
-    def logSpawn(self, bossHp):
-        phrase = OperationsService.GetShuffledAnswer(self.spawnPhrases)
-        response = phrase.format(bossHp=bossHp)
+    def logSpawn(self):
+        response = OperationsService.GetShuffledAnswer(self.spawnPhrases)
         bot.send_message(self.chatId, response)
 
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         hit_button = KeyboardButton("⚔ Ударить")
         markup.add(hit_button)
-        bot.send_message(self.chatId, "Меню атак получено", reply_markup=markup)
+
+    def SendBossCard(self, bossInfoDto):
+        response = self.bossCard.format(name=bossInfoDto.name,
+                                        level=bossInfoDto.level,
+                                        hp=bossInfoDto.hp,
+                                        maxhp=bossInfoDto.maxhp,
+                                        rarity=bossInfoDto.rarity)
+        
+        return bot.send_message(self.chatId, response).id
 
     def LogKill(self):
         response = OperationsService.GetShuffledAnswer(self.killPhrases)
