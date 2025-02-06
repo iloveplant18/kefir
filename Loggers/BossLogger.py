@@ -18,18 +18,14 @@ class BossLogger(object):
     ]
 
     bossCard =  "🐉 **Босс: {name}**\n" \
-                "❤️ Здоровье: {hp} HP / {maxhp} HP\n\n" \
+                "❤️ HP: {hp} / {maxhp}\n\n" \
                 "📊 Уровень:  {level}\n" \
                 "💎 Редкость: {rarity}"
     
     battleReport =  " 🛠️ В разработке\n\n" \
                     "📝 **Отчет о бое**\n" \
                     "🐉 Босс: {name}\n\n" \
-                    "💥 Урон:\n" \
-                    "[Игрок1]: [урон]\n" \
-                    "[Игрок2]: [урон]\n" \
-                    "...\n" \
-                    "Лут..." \
+                    "💥 Урон:\n"
 
     def __init__(self, chatId):
         self.chatId = chatId
@@ -50,11 +46,17 @@ class BossLogger(object):
                                         maxhp=bossInfoDto.maxhp,
                                         rarity=bossInfoDto.rarity)
         
-        return bot.send_message(self.chatId, response, parse_mode="Markdown").id
+        messageId = bot.send_message(self.chatId, response, parse_mode="Markdown").id
+        bot.pin_chat_message(self.chatId, message_id=messageId)
+        return messageId
 
-    def LogKill(self, bossInfoDto):
+    def LogKill(self, bossInfoDto, UsersDamageDto):
         responseKill = OperationsService.GetShuffledAnswer(self.killPhrases)
         responseReport = self.battleReport.format(name=bossInfoDto.name)
+        for user in UsersDamageDto:
+            line = f"{user.userName}: {user.hitpoints}\n"
+            responseReport += line
+        responseReport += "\nОпыт получают все, кто участвовал"
 
         bot.send_message(self.chatId, responseKill, reply_markup=ReplyKeyboardRemove())
         bot.send_message(self.chatId, responseReport, parse_mode="Markdown")

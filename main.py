@@ -8,35 +8,44 @@ import os
 
 
 bot.set_my_commands([
-    BotCommand("battles", "В боевой режим"),
-    BotCommand("chill", "В мирный режим"),
+    BotCommand("char", "Создать персонажа"),
     BotCommand("boss", "Призвать босса"),
-],
-scope=BotCommandScopeChat(chat_id=os.getenv('BOT_KEY')))
+])
+scope=BotCommandScopeChat(chat_id=os.getenv('BOT_KEY'))
 bossControllers = dict()
+
 
 @bot.message_handler(commands=['boss'])
 def start(message):
-    bossController = BossController(message.chat.id)
-    bossControllers[f"{message.chat.id}"] = bossController
-    bossController.spawnBoss()
-    
+    # это нужно отрефакторить
+    if (message.chat.id not in bossControllers.keys()):
+        bossControllers[message.chat.id] = BossController(message.chat.id) # оно не перезаписывает объект 
+    bossControllers[message.chat.id].spawnBoss()
+
 @bot.message_handler(func=lambda message: message.text == "⚔ Ударить")#has_character=True)
 def hit(message):
     userDto = UserDto(message.from_user.id, message.from_user.first_name)
-    bossController = bossControllers[f"{message.chat.id}"]
+    bossController = bossControllers[message.chat.id]
     bot.delete_message(message.chat.id, message.id)
-    bossController.hitBoss(userDto)
+    if (bossController.characterService.CheckCharacter(userDto.id) == False):
+        bot.send_message(message.chat.id, "Чтобы драться, нужен персонаж \nПиши /char")
+        return
+    result = bossController.hitBoss(userDto)
+    if (result == False):
+        del bossControllers[message.chat.id]
 
-@bot.message_handler(commands=['character'])
+
+@bot.message_handler(commands=['char'])
 def showOrCreateCharacter(message):
     characterController = CharacterController(message.chat.id)
-    characterController.showOrCreate(message.from_user.id, message.from_user.first_name, 20)
+    userDto = UserDto(message.from_user.id, message.from_user.first_name)
+    characterController.showOrCreate(userDto)
 
 
 @bot.message_handler(depression_filter=True)
 def depression_controller(message):
     bot.reply_to(message, 'заплачь')
+
 
 @bot.message_handler()
 def message_handler(message):
