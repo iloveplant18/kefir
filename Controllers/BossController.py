@@ -69,7 +69,7 @@ class BossController:
             for userId in self.usersDamage.keys():
                 request = TakeExpRequest(userId, exp)
                 self.characterService.TakeExp(request)
-                self.UnblockUser(userDto)
+            self.UnblockUser(userDto)
             self.usersDamage.clear() #убрать когда решится проблема с неперезаписыванием контроллера в main
             return False
 
