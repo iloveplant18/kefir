@@ -13,6 +13,7 @@ from config.bot_init import bot
 class BossController:
 
     usersOnCooldown = dict()
+    usersBlockedAttacks = list()
 
     def __init__(self, chatId):
         self.chatId = chatId
@@ -37,8 +38,10 @@ class BossController:
         if (not isBossExists):
             bot.send_message(self.chatId, 'босс не призван, неполучится подраться эх')
             return
-
-        # TODO: проверка возможно ли ударить босса (есть ли кулдаун или чета такое)
+        
+        if (self.CheckIsUserBlocked(userDto)):
+            return
+        self.BlockUser(userDto)
 
         characterRepository = CharacterRepository() #Постоянно доставать одних и тех же челеков?
         character = characterRepository.get(userDto.id)
@@ -53,6 +56,7 @@ class BossController:
         if (self.CheckCooldown(userDto.id) == True):
             self.battleLogger.CleanLastCooldownLog()
             self.battleLogger.LogOnCooldown(userDto.name)
+            self.UnblockUser(userDto)
             return
         
         # Брать damageDto из метода атаки персонажа
@@ -62,6 +66,19 @@ class BossController:
 
         self.GoToCooldown(userDto.id)
         self.battleLogger.LogToCooldown(userDto, cooldown=30)
+        self.UnblockUser(userDto)
+
+    def CheckIsUserBlocked(self, userDto):
+        if (userDto.id in self.usersBlockedAttacks):
+            return True
+        else:
+            return False
+    
+    def BlockUser(self, userDto):
+        self.usersBlockedAttacks.append(userDto.id)
+
+    def UnblockUser(self, userDto):
+        self.usersBlockedAttacks.remove(userDto.id)
 
     def CheckCooldown(self, userId):
         usersOnCooldown = list(self.usersOnCooldown.keys())
@@ -69,8 +86,6 @@ class BossController:
             return True
         else:
             return False
-        
-
         
     # В сервис персонажа
     def CheckReload(self, userId, cooldownSeconds):
