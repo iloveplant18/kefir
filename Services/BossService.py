@@ -3,28 +3,38 @@ from Models.Bosses.Kvadrober import Kvadrober
 from DTOs.BossInfoDto import BossInfoDto
 from DTOs.AttackResponse import AttackResponse
 from config.bot_init import inject
+from Loggers.BattleLogger import BattleLogger
+from Loggers.BossLogger import BossLogger
 
 class BossService(object):
 
-    def __init__(self, bossLogger, battleLogger):
-        self.bossLogger = bossLogger
-        self.battleLogger = battleLogger
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self, chatId):
+        self.chatId = chatId
+        self.bossLogger = BossLogger(chatId)
+        self.battleLogger = BattleLogger(chatId)
         self.idBossInfoMessage = None
         self.bossRepository = inject._bossRepository
 
-    def SpawnBoss(self, chatId: int) -> Boss or False :
+    def SpawnBoss(self: int) -> Boss or False :
         
         # Подумать как лучше реализовать создание любого босса по запросу
         boss = Kvadrober()
-        self.bossRepository.create(chatId, boss)
+        self.bossRepository.create(self.chatId, boss)
 
         self.infoDto = BossInfoDto(boss.name, boss.level, boss.hp, boss.hp, boss.rarity)
         self.bossLogger.logSpawn()
         self.idBossInfoMessage = self.bossLogger.SendBossCard(self.infoDto)
 
-    def HitBoss(self, chatId, userDto, damageDto):
+    def HitBoss(self, userDto, damageDto):
         
-        boss = self.bossRepository.get(chatId)
+        boss = self.bossRepository.get(self.chatId)
         
         # Логика расчета урона damage=... с учетом сопротивлений босса
         damage = damageDto.hitpoints # Пока заглушка
@@ -39,7 +49,7 @@ class BossService(object):
 
         updateRequest = { "hp": hpAfterHit }
 
-        self.bossRepository.update(chatId, updateRequest)
+        self.bossRepository.update(self.chatId, updateRequest)
         self.battleLogger.LogHit(userDto, damage)
         self.infoDto.hp = hpAfterHit
         self.battleLogger.RefreshEnemyInfo(self.idBossInfoMessage, self.infoDto)
@@ -47,16 +57,16 @@ class BossService(object):
         response = AttackResponse(True, damage)
         return response
         
-    def KillBoss(self, chatId: int, usersDamageDtos) -> None:
-        self.bossRepository.delete(chatId)
+    def KillBoss(self, usersDamageDtos) -> None:
+        self.bossRepository.delete(self.chatId)
         self.bossLogger.RemoveBossCard(self.idBossInfoMessage)
         self.bossLogger.LogKill(self.infoDto, usersDamageDtos)
 
-    def CheckIsBossExistsInChat(self, chatId) -> bool:
-        bossInChat = self.bossRepository.get(chatId)
+    def CheckIsBossExistsInChat(self) -> bool:
+        bossInChat = self.bossRepository.get(self.chatId)
         return bool(bossInChat)
 
-    def GetBossExpGain(self, chatId):
-        boss = self.bossRepository.get(chatId)
+    def GetBossExpGain(self):
+        boss = self.bossRepository.get(self.chatId)
         return boss.expGain
    

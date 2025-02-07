@@ -1,8 +1,8 @@
 from Models.Character import Character
-from Repositories.CharacterRepository import CharacterRepository
 from DTOs.DamageDto import DamageDto
 from DTOs.CharacterDto import CharacterInfoDto
 from config.bot_init import inject
+from Loggers.CharacterLogger import CharacterLogger
 import random
 
 # Перенести
@@ -13,9 +13,17 @@ class TakeExpRequest:
 
 class CharacterService(object):
 
-    def __init__(self, logger):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self, chatId):
+        self.chatId = chatId
         self.characterRepository = inject._characterRepository
-        self.logger = logger
+        self.logger = CharacterLogger(chatId)
 
     def showCharacter(self, userId):
 

@@ -1,13 +1,8 @@
-import random
-
 from Services.Shared.DateTimeOperationsService import DateTimeOperationsService
-from Loggers.BossLogger import BossLogger
 from Loggers.BattleLogger import BattleLogger
-from Loggers.CharacterLogger import CharacterLogger
-from Repositories.BossRepository import BossRepository
-from Services.BossService import BossService
 from Services.CharacterService import CharacterService
-from config.bot_init import bot
+from Services.BossService import BossService
+from config.bot_init import bot, inject
 from Services.CharacterService import TakeExpRequest
 from DTOs.UsersDamageDto import UsersDamageDto
 
@@ -23,27 +18,24 @@ class BossController:
 
     def __init__(self, chatId):
         self.chatId           = chatId
-        bossRepository        = BossRepository() # а если несколько боссов можно создать. Каждому свой репозиторий?
-        bossLogger            = BossLogger(self.chatId)
-        characterLogger       = CharacterLogger(self.chatId)
         self.battleLogger     = BattleLogger(self.chatId)
-        self.bossService      = BossService(bossLogger, self.battleLogger)
-        self.characterService = CharacterService(characterLogger)
+        self.bossService      = BossService(chatId)
+        self.characterService = CharacterService(chatId)
 
         self.usersOnCooldown     = dict()
         self.usersDamage         = dict()
         self.usersBlockedAttacks = list()
         
     def spawnBoss(self):
-        isBossExistsInChat = self.bossService.CheckIsBossExistsInChat(self.chatId)
+        isBossExistsInChat = self.bossService.CheckIsBossExistsInChat()
         if (isBossExistsInChat):
             bot.send_message(self.chatId, "Вы че, добейте этого сначала")
             return
 
-        self.bossService.SpawnBoss(self.chatId)
+        self.bossService.SpawnBoss()
 
     def hitBoss(self, userDto):
-        isBossExists = self.bossService.CheckIsBossExistsInChat(self.chatId)
+        isBossExists = self.bossService.CheckIsBossExistsInChat()
         if (not isBossExists):
             bot.send_message(self.chatId, 'босс не призван, неполучится подраться эх')
             return
@@ -66,13 +58,13 @@ class BossController:
         # TODO Могут быть атаки мили, дальние, магические. У каждой свой метод
         damageDto = self.characterService.CalculateMeleeDamage(userDto.id)
 
-        response = self.bossService.HitBoss(self.chatId, userDto, damageDto)
+        response = self.bossService.HitBoss(userDto, damageDto)
         self.RefreshUsersDamage(userDto.id, response.hitpoints)
 
         if (response.isEnemyAlive == False):
-            exp = self.bossService.GetBossExpGain(self.chatId)
+            exp = self.bossService.GetBossExpGain()
             usersDamageDtos = [UsersDamageDto(self.GetUserName(key), value) for key, value in self.usersDamage.items()]
-            self.bossService.KillBoss(self.chatId, usersDamageDtos)
+            self.bossService.KillBoss(usersDamageDtos)
             for userId in self.usersDamage.keys():
                 request = TakeExpRequest(userId, exp)
                 self.characterService.TakeExp(request)

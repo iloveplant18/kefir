@@ -11,8 +11,8 @@ class Inject():
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    # Здесь регистрируем сервисы и репозитории
+    # Здесь регистрируем репозитории
     _chatEnemyRepository = ChatEnemyRepository()
-    _bossRepository = BossRepository()
+    _bossRepository      = BossRepository()
     _characterRepository = CharacterRepository()
 

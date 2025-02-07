@@ -5,8 +5,7 @@ class CharacterController:
 
     def __init__(self, chatId: int):
         self.chatId = chatId
-        characterLogger = CharacterLogger(chatId)
-        self.characterService = CharacterService(characterLogger)
+        self.characterService = CharacterService(chatId)
 
     def showOrCreate(self, userDto):
         haveCharacter = self.characterService.CheckCharacter(userDto.id)
