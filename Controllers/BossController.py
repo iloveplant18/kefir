@@ -14,9 +14,12 @@ from DTOs.UsersDamageDto import UsersDamageDto
 
 class BossController:
 
-    usersOnCooldown     = dict()
-    usersDamage         = dict()
-    usersBlockedAttacks = list()
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __init__(self, chatId):
         self.chatId           = chatId
@@ -24,8 +27,12 @@ class BossController:
         bossLogger            = BossLogger(self.chatId)
         characterLogger       = CharacterLogger(self.chatId)
         self.battleLogger     = BattleLogger(self.chatId)
-        self.bossService      = BossService(bossRepository, bossLogger, self.battleLogger)
+        self.bossService      = BossService(bossLogger, self.battleLogger)
         self.characterService = CharacterService(characterLogger)
+
+        self.usersOnCooldown     = dict()
+        self.usersDamage         = dict()
+        self.usersBlockedAttacks = list()
         
     def spawnBoss(self):
         isBossExistsInChat = self.bossService.CheckIsBossExistsInChat(self.chatId)
@@ -70,7 +77,6 @@ class BossController:
                 request = TakeExpRequest(userId, exp)
                 self.characterService.TakeExp(request)
             self.UnblockUser(userDto)
-            self.usersDamage.clear() #убрать когда решится проблема с неперезаписыванием контроллера в main
             return False
 
         self.GoToCooldown(userDto.id)

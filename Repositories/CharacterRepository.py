@@ -5,6 +5,13 @@ characters = dict()
 #По хорошему репозиторий должен получать модель и мапить результаты в хранилище самостоятельно
 class CharacterRepository(object):
 
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def get(self, userId: int) -> Character or None:
         if (self.checkIsCharacterExists(userId)):
             return characters[userId]

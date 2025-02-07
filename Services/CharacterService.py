@@ -2,6 +2,7 @@ from Models.Character import Character
 from Repositories.CharacterRepository import CharacterRepository
 from DTOs.DamageDto import DamageDto
 from DTOs.CharacterDto import CharacterInfoDto
+from config.bot_init import inject
 import random
 
 # Перенести
@@ -13,7 +14,7 @@ class TakeExpRequest:
 class CharacterService(object):
 
     def __init__(self, logger):
-        self.characterRepository = CharacterRepository()
+        self.characterRepository = inject._characterRepository
         self.logger = logger
 
     def showCharacter(self, userId):

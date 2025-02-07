@@ -1,16 +1,16 @@
 from Models.Bosses.Base.Boss import Boss
 from Models.Bosses.Kvadrober import Kvadrober
 from DTOs.BossInfoDto import BossInfoDto
-from Models.Character import Character
 from DTOs.AttackResponse import AttackResponse
+from config.bot_init import inject
 
 class BossService(object):
 
-    def __init__(self, bossRepository, bossLogger, battleLogger):
-        self.bossRepository = bossRepository
+    def __init__(self, bossLogger, battleLogger):
         self.bossLogger = bossLogger
         self.battleLogger = battleLogger
         self.idBossInfoMessage = None
+        self.bossRepository = inject._bossRepository
 
     def SpawnBoss(self, chatId: int) -> Boss or False :
         
@@ -28,6 +28,7 @@ class BossService(object):
         
         # Логика расчета урона damage=... с учетом сопротивлений босса
         damage = damageDto.hitpoints # Пока заглушка
+        damage = 70
 
         boss.GetHit(damage)
         hpAfterHit = boss.hp

@@ -6,7 +6,6 @@ from Services.AcheService import AcheService, IcheService, RandomUntilConversati
 from telebot.types import BotCommand, BotCommandScopeChat
 import os
 
-
 bot.set_my_commands([
     BotCommand("char", "Создать персонажа"),
     BotCommand("boss", "Призвать босса"),
@@ -14,12 +13,15 @@ bot.set_my_commands([
 scope=BotCommandScopeChat(chat_id=os.getenv('BOT_KEY'))
 bossControllers = dict()
 
+import sys
+import weakref
 
 @bot.message_handler(commands=['boss'])
 def start(message):
     # это нужно отрефакторить
+    
     if (message.chat.id not in bossControllers.keys()):
-        bossControllers[message.chat.id] = BossController(message.chat.id) # оно не перезаписывает объект 
+        bossControllers[message.chat.id] = BossController(message.chat.id)
     bossControllers[message.chat.id].spawnBoss()
 
 @bot.message_handler(func=lambda message: message.text == "⚔ Ударить")#has_character=True)
@@ -27,12 +29,16 @@ def hit(message):
     userDto = UserDto(message.from_user.id, message.from_user.first_name)
     bossController = bossControllers[message.chat.id]
     bot.delete_message(message.chat.id, message.id)
+
     if (bossController.characterService.CheckCharacter(userDto.id) == False):
         bot.send_message(message.chat.id, "Чтобы драться, нужен персонаж \nПиши /char")
         return
+    
     result = bossController.hitBoss(userDto)
     if (result == False):
+        print("Количество ссылок на bossController", sys.getrefcount(bossControllers[message.chat.id]))
         del bossControllers[message.chat.id]
+        
 
 
 @bot.message_handler(commands=['char'])
