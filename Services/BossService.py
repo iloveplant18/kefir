@@ -44,7 +44,6 @@ class BossService(object):
         
         # Логика расчета урона damage=... с учетом сопротивлений босса
         damage = damageDto.hitpoints # Пока заглушка
-        damage = 70
 
         if (self.boss.hp < damage):
             damage = self.boss.hp
