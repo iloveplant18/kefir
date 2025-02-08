@@ -4,18 +4,23 @@ import random
 class Character(object):
     
     def __init__(self, 
-                 userId, 
+                 userId,
                  name):
         self.userId = userId
         self.name = name
         self.level = 1
         self.exp = 0
-        self.expNeed = 100
+        self.expNeed = 50
         self.maxHp = 20
         self.hp = self.maxHp
         self.damageBase = 5
         self.armor = 0 
         self.elementalResistance = 0
+        self.lastAttackDateTime = None
+        self.onCooldown = False
+        self.lastCooldownMessageId = None
+        self.lastOnCooldownMessageId = None
+        self.lastHitMessageId = None
 
     def TakeExp(self, exp):
         self.exp += exp

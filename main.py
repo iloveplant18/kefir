@@ -1,4 +1,5 @@
 from Controllers.BossController import BossController
+from Controllers.ChatEnemyController import ChatEnemyController
 from Controllers.CharacterController import CharacterController
 from DTOs.UserDto import UserDto
 from config.bot_init import bot
@@ -6,38 +7,79 @@ from Services.AcheService import AcheService, IcheService, RandomUntilConversati
 from telebot.types import BotCommand, BotCommandScopeChat
 import os
 
-
 bot.set_my_commands([
     BotCommand("char", "Создать персонажа"),
     BotCommand("boss", "Призвать босса"),
 ])
 scope=BotCommandScopeChat(chat_id=os.getenv('BOT_KEY'))
-bossControllers = dict()
 
 
 @bot.message_handler(commands=['boss'])
 def start(message):
-    # это нужно отрефакторить
-    if (message.chat.id not in bossControllers.keys()):
-        bossControllers[message.chat.id] = BossController(message.chat.id) # оно не перезаписывает объект 
-    bossControllers[message.chat.id].spawnBoss()
+    
+    chatEnemyController = ChatEnemyController(message.chat.id)
+    enemyId = chatEnemyController.GetEnemyId()
 
-@bot.message_handler(func=lambda message: message.text == "⚔ Ударить")#has_character=True)
+    if(enemyId is not None):
+        bot.send_message(message.chat.id, "Добейте этого")
+        return
+    
+    bossController = BossController(message.chat.id, message.from_user.id, enemyId)
+    bossId = bossController.spawnBoss()
+    chatEnemyController.CreateEnemy(bossId)
+
+
+@bot.message_handler(func=lambda message: message.text == "⚔ Ударить")
 def hit(message):
-    userDto = UserDto(message.from_user.id, message.from_user.first_name)
-    bossController = bossControllers[message.chat.id]
+
     bot.delete_message(message.chat.id, message.id)
-    if (bossController.characterService.CheckCharacter(userDto.id) == False):
+
+    chatEnemyController = ChatEnemyController(message.chat.id)
+    enemyId = chatEnemyController.GetEnemyId()
+
+    if(enemyId == None):
+        bot.send_message(message.chat.id, "Бить некого.\nПиши /boss")
+        return
+    
+    userDto = UserDto(message.from_user.id, message.from_user.first_name)
+
+    characterController = CharacterController(message.chat.id, userDto.id)
+    haveCharacter = characterController.CheckCharacter(userDto.id)
+
+    if (haveCharacter == False):
         bot.send_message(message.chat.id, "Чтобы драться, нужен персонаж \nПиши /char")
         return
-    result = bossController.hitBoss(userDto)
-    if (result == False):
-        del bossControllers[message.chat.id]
+
+    characterController.DeleteLastOnCooldownMessage()
+    onCooldown = characterController.CheckUserOnCooldown()
+
+    if (onCooldown == True):
+        characterController.SendAndSetOnCooldownMessage()
+        return
+    
+    characterController.UnsetCooldown()
+    characterController.DeleteHitAndCooldownMessages()
+
+    bossController = BossController(message.chat.id, userDto.id, enemyId)
+    damage = bossController.hitBoss(userDto)
+    characterController.GoToCooldown()
+    characterController.SendAndSetHitAndCooldownMessages(userDto, damage)
+
+    isBossAlive = bossController.CheckIsBossAlive()
+
+    if (isBossAlive == False):
+        expCharactersDto = bossController.GetExperienceForCharacters()
+
+        usersDamage = bossController.GetUsersDamage()
+        bossController.KillBoss(usersDamage)
+        chatEnemyController.Delete()
+
+        characterController.GiveExperienceToCharacters(expCharactersDto)
 
 
 @bot.message_handler(commands=['char'])
 def showOrCreateCharacter(message):
-    characterController = CharacterController(message.chat.id)
+    characterController = CharacterController(message.chat.id, message.from_user.id)
     userDto = UserDto(message.from_user.id, message.from_user.first_name)
     characterController.showOrCreate(userDto)
 
