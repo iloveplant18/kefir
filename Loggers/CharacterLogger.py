@@ -43,3 +43,7 @@ class CharacterLogger(object):
     def LogLevelUp(self, userName):
         message =  f"{userName}, ты повысил уровень\n"
         bot.send_message(self.chatId, message)
+
+    
+    def DeleteMessage(self, messageId):
+        bot.delete_message(self.chatId, messageId)

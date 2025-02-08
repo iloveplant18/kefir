@@ -1,11 +1,10 @@
 from Models.Character import Character
 
-characters = dict()
-
 #По хорошему репозиторий должен получать модель и мапить результаты в хранилище самостоятельно
 class CharacterRepository(object):
-
+    
     _instance = None
+    characters = list()
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -13,26 +12,25 @@ class CharacterRepository(object):
         return cls._instance
 
     def get(self, userId: int) -> Character or None:
-        if (self.checkIsCharacterExists(userId)):
-            return characters[userId]
+        print("Чтение", self.characters)
+        return next((c for c in self.characters if c.userId == userId), None)
 
-    def create(self, userId: int, name: str) -> Character or None:
-        if (self.checkIsCharacterExists(userId)):
+    def create(self, model) -> str or None:
+
+        if (next((c for c in self.characters if c.userId == model.userId), None) is not None):
             return
-        character = Character(userId, name)
-        characters[userId] = character
-        return character
+        
+        self.characters.append(model)
+
+        print("Создание", self.characters)
+
+        return model.userId
     
-    def update(self, characterId: int, newValues: dict):
-        character = self.get(characterId)
+    def update(self, userId: int, newValues: dict):
+        character = self.get(userId)
         propertiesToUpdate = newValues.keys()
         for property in propertiesToUpdate:
             if hasattr(character, property):
                 setattr(character, property, newValues[property])
             else:
                 raise Exception('trying to update non existend property on character')
-
-    def checkIsCharacterExists(self, userId) -> bool :
-        if (userId in characters):
-            return True
-        return False

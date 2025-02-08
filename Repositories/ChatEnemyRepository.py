@@ -16,15 +16,14 @@ class ChatEnemyRepository(object):
     def get(self, chatId: int) -> ChatEnemy or None:
         return next((ce for ce in self.chatEnemies if ce.chatId == chatId), None)
 
-    def create(self, chatId: int, bossId: str) -> ChatEnemy or None:
+    def create(self, model) -> str or None:
 
-        if (next((ce for ce in self.chatEnemies if ce.chatId == chatId), None) is not None):
+        if (next((ce for ce in self.chatEnemies if ce.chatId == model.chatId), None) is not None):
             return
         
-        chatEnemy = ChatEnemy(chatId, bossId)
-        self.chatEnemies.append(chatEnemy)
+        self.chatEnemies.append(model)
 
-        return chatId
+        return model.chatId
     
     def update(self, chatId: int, newValues: dict):
 
@@ -36,3 +35,9 @@ class ChatEnemyRepository(object):
                 setattr(chatEnemy, property, newValues[property])
             else:
                 raise Exception('trying to update non existend property on character')
+            
+    def delete(self, chatId) -> True :
+        chatEnemy = self.get(chatId)
+        if(chatEnemy is not None):
+            self.chatEnemies.remove(chatEnemy)
+        return True

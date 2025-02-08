@@ -48,9 +48,9 @@ class BossLogger(object):
         bot.pin_chat_message(self.chatId, message_id=messageId)
         return messageId
 
-    def LogKill(self, bossInfoDto, UsersDamageDto):
+    def LogKill(self, bossName, UsersDamageDto):
         responseKill = OperationsService.GetShuffledAnswer(self.killPhrases)
-        responseReport = self.battleReport.format(name=bossInfoDto.name)
+        responseReport = self.battleReport.format(name=bossName)
         for user in UsersDamageDto:
             line = f"{user.userName}: {user.hitpoints}\n"
             responseReport += line

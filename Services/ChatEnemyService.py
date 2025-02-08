@@ -1,4 +1,5 @@
 from config.bot_init import inject
+from Models.ChatEnemy import ChatEnemy
 
 class ChatEnemyService(object):
 
@@ -10,4 +11,21 @@ class ChatEnemyService(object):
         return cls._instance
     
     def __init__(self, chatId):
+        self.chatId = chatId
         self.chatEnemyRepository = inject._chatEnemyRepository
+
+    def GetEnemyId(self):
+        chatEnemy = self.chatEnemyRepository.get(self.chatId)
+
+        if (chatEnemy == None):
+            return None
+
+        enemyId = chatEnemy.enemyId
+        return enemyId
+    
+    def SaveEnemy(self, enemyId):
+        chatEnemy = ChatEnemy(self.chatId, enemyId)
+        self.chatEnemyRepository.create(chatEnemy)
+
+    def Delete(self):
+        self.chatEnemyRepository.delete(self.chatId)
