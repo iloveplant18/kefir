@@ -44,9 +44,9 @@ class BossService(object):
         
         # Логика расчета урона damage=... с учетом сопротивлений босса
         damage = damageDto.hitpoints # Пока заглушка
-
         if (self.boss.hp < damage):
             damage = self.boss.hp
+            
 
         self.boss.GetHit(damage)
         self.boss.RefreshUserDamage(userDto.id, damage)
