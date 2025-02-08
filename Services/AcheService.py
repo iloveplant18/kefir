@@ -1,5 +1,7 @@
 from Services.Shared.OperationsService import OperationsService
-from Services.Shared import Data
+from Services.SosalService import SosalService
+from Services.Shared.Data import data
+from config.bot_init import bot
 
 class AcheService(object):
     def Handle(self, message: str) -> str|None :
@@ -31,15 +33,20 @@ class IcheService(object):
 
 # Случайная фраза прокает с определенным шансом на каждое сообщение
 class RandomUntilConversationService(object):
-    def Handle(self, message: str) -> str|None :
+    def Handle(self, chatId) -> str|None :
+
+        chanceToLucky = 2
+        isLucky = OperationsService.CheckLuck(chanceToLucky)
+
+        if (isLucky):
+            SosalService().Handle(chatId)
+            return
 
         chanceToLucky = 8 #в целочисленных процентах от 1 до 100
         isLucky = OperationsService.CheckLuck(chanceToLucky)
 
-        responses = Data.data["phrases"]
-        response = OperationsService.GetShuffledAnswer(responses)
-
         if (isLucky):
-            return response
-        else:
-            return None
+            responses = data["badPhrases"] + data["goodPhrases"]
+            response = OperationsService.GetShuffledAnswer(responses)
+            bot.send_message(chatId, response)
+            return
