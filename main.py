@@ -105,10 +105,7 @@ def message_handler(message):
 
     # Случайная фраза прокает с определенным шансом на каждое сообщение
     service = RandomUntilConversationService()
-    response = service.Handle(message.text)
-    if (response):
-        bot.send_message(message.chat.id, response)
-        return
+    response = service.Handle(message.chat.id)
 
 
 bot.infinity_polling()  
