@@ -46,6 +46,11 @@ class CharacterService(object):
 
         character = Character(userDto.id, userDto.name)
 
+        #Удалить в новой версии
+        for i in range(15):
+            character.LevelUp()
+        character.exp = 0
+        
         self.characterRepository.create(character)
         self.logger.logCreation(userDto.name)
 
