@@ -1,9 +1,10 @@
 from Models.Character import Character
 from DTOs.DamageDto import DamageDto
 from DTOs.CharacterDto import CharacterInfoDto
+from DTOs.UserDto import UserDto
 from config.bot_init import inject
-from Loggers.CharacterLogger import CharacterLogger
-from Loggers.BattleLogger import BattleLogger
+from Services.CharacterMessageService import CharacterMessageService
+from Services.BattleMessageService import BattleMessageService
 from Services.Shared.DateTimeOperationsService import DateTimeOperationsService
 import random
 
@@ -19,8 +20,8 @@ class CharacterService(object):
     def __init__(self, chatId, userId):
         self.characterRepository = inject._characterRepository
         self.chatId = chatId
-        self.logger = CharacterLogger(chatId)
-        self.battleLogger = BattleLogger(chatId)
+        self.characterMessageService = CharacterMessageService(chatId)
+        self.battleMessageService = BattleMessageService(chatId)
         self.character = self.GetCharacter(userId)
 
     def showCharacter(self):
@@ -40,19 +41,14 @@ class CharacterService(object):
                                             character.armor,
                                             character.elementalResistance)
 
-        self.logger.logStats(characterInfoDto)
+        self.characterMessageService.logStats(characterInfoDto)
 
     def createCharacter(self, userDto) -> Character or None:
 
         character = Character(userDto.id, userDto.name)
-
-        #Удалить в новой версии
-        for i in range(15):
-            character.LevelUp()
-        character.exp = 0
         
         self.characterRepository.create(character)
-        self.logger.logCreation(userDto.name)
+        self.characterMessageService.logCreation(userDto.name)
 
     def TakeExp(self, userId, exp):
         character = self.characterRepository.get(userId)
@@ -61,7 +57,7 @@ class CharacterService(object):
 
         if (character.CheckLevelUp() == True):
             character.LevelUp()
-            self.logger.LogLevelUp(character.name)
+            self.characterMessageService.LogLevelUp(character.name)
         
         request = dict({"level": character.level, 
                         "exp":  character.exp,
@@ -96,9 +92,10 @@ class CharacterService(object):
             return True
         
     def CheckOnCooldown(self):
-        character = self.character
 
-        if (character.onCooldown == True):
+        onCooldown = self.character.onCooldown
+
+        if (onCooldown == True):
             return True
         else:
             return False
@@ -121,76 +118,41 @@ class CharacterService(object):
         
 
     def OutOfCooldown(self):
-        character = self.character
+        self.character.onCooldown = False
+        self.characterRepository.update(self.character.userId, {"onCooldown": self.character.onCooldown})
 
-        character.onCooldown = False
-        self.characterRepository.update(character.userId, {"onCooldown": character.onCooldown}) # смешная штука. реалии текущей репы
         
-
     def GetCharacter(self, userId):
         return self.characterRepository.get(userId)
     
 
     def DeleteLastOnCooldownMessage(self):
-        character = self.character
-
-        messageId = character.lastOnCooldownMessageId
-
-        if (messageId == None):
-            return
-        
-        character.lastOnCooldownMessageId = None
-
-        self.characterRepository.update(character.userId, {"lastOnCooldownMessageId": character.lastOnCooldownMessageId})
-
-        self.logger.DeleteMessage(messageId)
+       self.characterMessageService.DeleteOnCooldownMessage(self.character.userId)
+            
 
     def DeleteHitAndCooldownMessages(self):
-        character = self.character
-
-        hitMessageId = character.lastHitMessageId
-        cooldownMessageId = character.lastCooldownMessageId
-
-        if (hitMessageId is None or cooldownMessageId is None):
-            return
-        
-        character.lastHitMessageId = None
-        character.lastCooldownMessageId = None
-
-        self.characterRepository.update(character.userId, {"lastHitMessageId": character.lastHitMessageId, "lastCooldownMessageId": character.lastCooldownMessageId})
-
-        self.logger.DeleteMessage(hitMessageId)
-        self.logger.DeleteMessage(cooldownMessageId)
+        self.characterMessageService.DeleteHitAndCooldownMessages(self.character.userId)
 
 
     def SendAndSetOnCooldownMessage(self):
         character = self.character
 
-        userName = character.name
-        onCooldownMessageId = self.battleLogger.LogOnCooldown(userName)
+        userDto = UserDto(character.userId, character.name)
 
-        character.lastOnCooldownMessageId = onCooldownMessageId
-
-        self.characterRepository.update(character.userId, {"lastOnCooldownMessageId": character.lastOnCooldownMessageId})
+        self.battleMessageService.LogOnCooldown(userDto)
 
 
     def SendAndSetHitAndCooldownMessages(self, userDto, damage):
-        character = self.character
+        self.battleMessageService.LogHit(userDto, damage)
+        self.battleMessageService.LogToCooldown(userDto, cooldown=15)
 
-        hitMessageId = self.battleLogger.LogHit(userDto, damage)
-        cooldownMessageId = self.battleLogger.LogToCooldown(userDto, cooldown=15)
-
-        character.lastHitMessageId = hitMessageId
-        character.lastCooldownMessageId = cooldownMessageId
-
-        self.characterRepository.update(character.userId, {"lastHitMessageId": character.lastHitMessageId, "lastCooldownMessageId": character.lastCooldownMessageId})
-    
 
     def SetCooldown(self):
         character = self.character
 
         dateTimeNow = DateTimeOperationsService.getNowDateTime()
         character.lastAttackDateTime = dateTimeNow
+
         character.onCooldown = True
 
         self.characterRepository.update(character.userId, {"lastAttackDateTime": character.lastAttackDateTime, "onCooldown": character.onCooldown})

@@ -3,8 +3,8 @@ from Models.Bosses.Kvadrober import Kvadrober
 from DTOs.BossInfoDto import BossInfoDto
 from DTOs.ExpCharactersDto import ExpCharactersDto
 from config.bot_init import inject
-from Loggers.BattleLogger import BattleLogger
-from Loggers.BossLogger import BossLogger
+from Services.BattleMessageService import BattleMessageService
+from Services.BossMessageService import BossMessageService
 
 class BossService(object):
 
@@ -19,8 +19,8 @@ class BossService(object):
         self.bossRepository = inject._bossRepository
         self.boss = self.GetBoss(enemyId)
         self.chatId = chatId
-        self.bossLogger = BossLogger(chatId)
-        self.battleLogger = BattleLogger(chatId)
+        self.bossMessageService = BossMessageService(chatId)
+        self.battleMessageService = BattleMessageService(chatId)
         
 
     def GetBoss(self, enemyId):
@@ -32,10 +32,10 @@ class BossService(object):
         boss = Kvadrober()
         bossId = self.bossRepository.create(boss)
 
-        self.bossLogger.logSpawn()
+        self.bossMessageService.logSpawn()
 
         infoDto = BossInfoDto(boss.name, boss.level, boss.hp, boss.maxHp, boss.rarity)
-        self.idBossInfoMessage = self.bossLogger.SendBossCard(infoDto)
+        self.bossMessageService.SendBossCard(infoDto)
 
         return bossId
 
@@ -44,6 +44,7 @@ class BossService(object):
         
         # Логика расчета урона damage=... с учетом сопротивлений босса
         damage = damageDto.hitpoints # Пока заглушка
+        damage = 50
         if (self.boss.hp < damage):
             damage = self.boss.hp
             
@@ -55,7 +56,8 @@ class BossService(object):
         self.bossRepository.update(self.boss.id, updateRequest)
 
         infoDto = BossInfoDto(self.boss.name, self.boss.level, self.boss.hp, self.boss.maxHp, self.boss.rarity)
-        self.battleLogger.RefreshEnemyInfo(self.idBossInfoMessage, infoDto)
+
+        self.battleMessageService.RefreshEnemyInfo(infoDto)
 
         return damage
 
@@ -72,8 +74,11 @@ class BossService(object):
         
     def KillBoss(self, usersDamageDtos) -> None:
         self.bossRepository.delete(self.chatId)
-        self.bossLogger.RemoveBossCard(self.idBossInfoMessage)
-        self.bossLogger.LogKill(self.boss.name, usersDamageDtos)
+        
+        self.bossMessageService.RemoveBossCard()
+        self.battleMessageService.DeleteAllGameMessages()
+        self.bossMessageService.LogKill(self.boss.name, usersDamageDtos)
+
 
     def CheckIsBossAlive(self):
 

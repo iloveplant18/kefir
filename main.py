@@ -61,7 +61,11 @@ def hit(message):
     characterController.DeleteHitAndCooldownMessages()
 
     bossController = BossController(message.chat.id, userDto.id, enemyId)
-    damage = bossController.hitBoss(userDto)
+    #там баг при одновременном убийстве босса, кто хочет фиксите, избавляйтесь от try catch
+    try:
+        damage = bossController.hitBoss(userDto)
+    except: 
+        return
     characterController.GoToCooldown()
     characterController.SendAndSetHitAndCooldownMessages(userDto, damage)
 
