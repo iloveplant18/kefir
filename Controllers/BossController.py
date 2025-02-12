@@ -1,4 +1,3 @@
-from Loggers.BattleLogger import BattleLogger
 from Services.CharacterService import CharacterService
 from Services.BossService import BossService
 from DTOs.UsersDamageDto import UsersDamageDto
@@ -16,7 +15,6 @@ class BossController:
 
     def __init__(self, chatId, userId, enemyId):
         self.chatId           = chatId
-        self.battleLogger     = BattleLogger(self.chatId)
         self.bossService      = BossService(chatId, enemyId)
         self.characterService = CharacterService(chatId, userId)
         

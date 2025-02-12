@@ -1,6 +1,7 @@
 from Repositories.ChatEnemyRepository import ChatEnemyRepository
 from Repositories.BossRepository import BossRepository
 from Repositories.CharacterRepository import CharacterRepository
+from Repositories.MessageRepository import MessageRepository
 
 class Inject():
 
@@ -15,4 +16,5 @@ class Inject():
     _chatEnemyRepository = ChatEnemyRepository()
     _bossRepository      = BossRepository()
     _characterRepository = CharacterRepository()
+    _messageRepository = MessageRepository()
 

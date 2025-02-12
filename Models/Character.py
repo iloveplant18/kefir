@@ -18,9 +18,6 @@ class Character(object):
         self.elementalResistance = 0
         self.lastAttackDateTime = None
         self.onCooldown = False
-        self.lastCooldownMessageId = None
-        self.lastOnCooldownMessageId = None
-        self.lastHitMessageId = None
 
     def TakeExp(self, exp):
         self.exp += exp

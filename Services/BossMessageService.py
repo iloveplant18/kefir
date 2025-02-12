@@ -1,10 +1,21 @@
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from Services.Shared.OperationsService import OperationsService
-from config.bot_init import bot
+from Models.Message import Message
+from config.bot_init import bot, inject
 
+class BossMessageService(object):
 
-class BossLogger(object):
+    _instance = None
 
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self, chatId):
+        self.chatId = chatId
+        self.messageRepository = inject._messageRepository
+    
     spawnPhrases = [
         'Босс заспавнен',
         'Я вызвал босса, чуваки'
@@ -25,9 +36,6 @@ class BossLogger(object):
                     "🐉 Босс: {name}\n\n" \
                     "💥 Урон:\n"
 
-    def __init__(self, chatId):
-        self.chatId = chatId
-
     def logSpawn(self):
         response = OperationsService.GetShuffledAnswer(self.spawnPhrases)
         bot.send_message(self.chatId, response)
@@ -35,7 +43,11 @@ class BossLogger(object):
         markup = ReplyKeyboardMarkup(resize_keyboard=True)
         hit_button = KeyboardButton("⚔ Ударить")
         markup.add(hit_button)
-        bot.send_message(self.chatId, "Меню атак получено", reply_markup=markup)
+        messageId = bot.send_message(self.chatId, "Меню атак получено", reply_markup=markup).id
+
+        message = Message(messageId, None)
+        self.messageRepository.create(message)
+
 
     def SendBossCard(self, bossInfoDto):
         response = self.bossCard.format(name=bossInfoDto.name,
@@ -46,7 +58,10 @@ class BossLogger(object):
         
         messageId = bot.send_message(self.chatId, response, parse_mode="Markdown").id
         bot.pin_chat_message(self.chatId, message_id=messageId)
-        return messageId
+
+        message = Message(messageId, response, isBossCard=True)
+        self.messageRepository.create(message)
+
 
     def LogKill(self, bossName, UsersDamageDto):
         responseKill = OperationsService.GetShuffledAnswer(self.killPhrases)
@@ -56,9 +71,18 @@ class BossLogger(object):
             responseReport += line
         responseReport += "\nОпыт получают все, кто участвовал"
 
-        bot.send_message(self.chatId, responseKill, reply_markup=ReplyKeyboardRemove())
+        messageId = bot.send_message(self.chatId, responseKill, reply_markup=ReplyKeyboardRemove()).id
         bot.send_message(self.chatId, responseReport, parse_mode="Markdown")
 
-    def RemoveBossCard(self, messageId):
-        bot.delete_message(self.chatId, messageId)
-        return
+        message = Message(messageId, None)
+        self.messageRepository.create(message)
+
+
+    def RemoveBossCard(self):
+        message = self.messageRepository.getBossCard()
+        if (message == None):
+            return
+        else:
+            bot.delete_message(self.chatId, message.id)
+            self.messageRepository.delete(message.id)
+            return

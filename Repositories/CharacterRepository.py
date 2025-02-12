@@ -12,7 +12,6 @@ class CharacterRepository(object):
         return cls._instance
 
     def get(self, userId: int) -> Character or None:
-        print("Чтение", self.characters)
         return next((c for c in self.characters if c.userId == userId), None)
 
     def create(self, model) -> str or None:
@@ -21,8 +20,6 @@ class CharacterRepository(object):
             return
         
         self.characters.append(model)
-
-        print("Создание", self.characters)
 
         return model.userId
     
